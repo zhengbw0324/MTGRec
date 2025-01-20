@@ -1,0 +1,65 @@
+
+# Overwritting configs
+rand_seed: 2024
+reproducibility: true
+
+num_proc: 1
+data_dir: datasets/
+log_dir: run_logs/
+tensorboard_log_dir: tensorboard/
+ckpt_dir: ckpt/
+
+stage: pretrain        # pretrain or finetune
+pretrained_model: ""
+
+
+# data selection
+epoch_per_stage: [60, 20, 20]
+tau: 0.05
+load_best_for_next_stage: True
+
+
+train_batch_size: 256
+eval_batch_size: 256
+lr: 0.001
+weight_decay: 0.05
+warmup_steps: 10000
+steps: ~
+epochs: 300
+max_grad_norm: 1.0      # None for no clipping, else a float value
+eval_interval: 1        # Evaluate every n epochs
+save_interval: ~
+patience: 50            # Early stopping. Stop training after n epochs without improvement. Set to None to disable
+
+topk: [5,10]
+metrics: [ndcg,recall]
+val_metric: ndcg@10
+val_ratio: 0.1
+val_delay: 0
+
+# Config for Tokenizer
+n_codebooks: 3
+codebook_size: 256
+expand_final: True
+token_prefix: "sentence-t5-base_256,256,256,256"
+token_suffix: "sem_ids"
+
+# Config for TIGER
+n_user_tokens: 1      # Number of user tokens hashed from user ids
+max_item_seq_len: 20  # Maximum #items in a sequence
+num_beams: 20         # Number of beams for beam search
+test_num_beams: ~
+
+# Config for T5
+num_layers: 3
+num_decoder_layers: 3
+d_model: 128
+d_ff: 512
+num_heads: 4
+d_kv: 64
+dropout_rate: 0.1
+activation_function: "relu"
+feed_forward_proj: "relu"
+
+
+sem_id_epochs: [9990, 9991, 9992, 9993, 9994, 9995, 9996, 9997, 9998, 9999, 10000]

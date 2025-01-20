@@ -1,0 +1,39 @@
+data_dir: datasets/
+log_dir: run_logs/
+
+rand_seed: 2024
+reproducibility: true
+
+# Overwritting configs
+lr: 0.001
+learner: adagrad    # adamw or adagrad
+scheduler_type: constant # constant, linear
+weight_decay: 0.0    # Overwrite weight decay
+warmup_steps: 0
+
+batch_size: 2048
+epochs: 10000
+
+
+verbose_step: 1
+verbose_delay: 8000
+save_limit: 500
+ckpt_name: rqvae3x256_deep_128_ema
+
+
+# Config for sentence embedding model
+sent_emb_model: sentence-transformers/sentence-t5-base
+sent_emb_batch_size: 512
+sent_emb_dim: 768
+sent_emb_pca: 128     # -1 means no PCA, otherwise PCA dimension
+
+# Config for RQ
+n_codebooks: 3
+codebook_size: 256
+# Config for RQ-VAE
+hidden_sizes: [2048,1024,512,256,128]
+dropout: 0.0
+beta: 0.25
+vq_type: ema
+
+
