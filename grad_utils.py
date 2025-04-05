@@ -4,11 +4,7 @@ from hashlib import md5
 from typing import Iterable, List, Optional
 
 import torch
-import torch.nn.functional as F
-from torch import Tensor
-from torch.nn.functional import normalize
 from tqdm import tqdm
-# from trak.projectors import BasicProjector, CudaProjector, ProjectionType
 
 
 
@@ -25,25 +21,6 @@ def prepare_batch(batch, device=torch.device("cuda")):
         batch[key] = batch[key].to(device)
 
 
-
-# def get_trak_projector(device: torch.device, verbose=True):
-#     """ Get trak projectors (see https://github.com/MadryLab/trak for details) """
-#     try:
-#         num_sms = torch.cuda.get_device_properties(
-#             device.index).multi_processor_count
-#         import fast_jl
-#
-#         # test run to catch at init time if projection goes through
-#         fast_jl.project_rademacher_8(torch.zeros(
-#             8, 1_000, device=device), 512, 0, num_sms)
-#         projector = CudaProjector
-#         # if verbose:
-#         #     print("Using CudaProjector")
-#     except:
-#         projector = BasicProjector
-#         # if verbose:
-#         #     print("Using BasicProjector")
-#     return projector
 
 
 def get_number_of_params(model, verbose=True):
@@ -95,31 +72,15 @@ def collect_train_grads(dataloader,
                   adam_optimizer_state=None,):
 
 
-    model_id = 0  # model_id is used to draft the random seed for the projectors
-    block_size = 128  # fixed block size for the projectors
-    projector_batch_size = 16  # batch size for the projectors
-
     verbose = accelerator.is_main_process
 
     device = next(model.parameters()).device
-    dtype = next(model.parameters()).dtype
 
 
     assert adam_optimizer_state is not None
     # first and second moment estimates
     m, v = prepare_optimizer_state(model, adam_optimizer_state, device)
 
-    # projector = get_trak_projector(device, verbose)
-    # number_of_params = get_number_of_params(model, verbose)
-    #
-    # proj = projector(grad_dim=number_of_params,
-    #                  proj_dim=proj_dim,
-    #                  seed=0,
-    #                  proj_type=ProjectionType.rademacher,
-    #                  device=device,
-    #                  dtype=dtype,
-    #                  block_size=block_size,
-    #                  max_batch_size=projector_batch_size)
 
     model.zero_grad()
     total_steps = len(dataloader)
@@ -132,7 +93,6 @@ def collect_train_grads(dataloader,
     accelerator.wait_for_everyone()
     vectorized_grads = obtain_gradients_with_adam(model, m, v)
     vectorized_grads = vectorized_grads.unsqueeze(0)
-    # projected_grads = proj.project(vectorized_grads, model_id=model_id)
     projected_grads = vectorized_grads
 
 
@@ -147,26 +107,12 @@ def collect_valid_grads(dataloader,
                         model,
                         accelerator,
                         proj_dim=8192,):
-    model_id = 0  # model_id is used to draft the random seed for the projectors
-    block_size = 128  # fixed block size for the projectors
-    projector_batch_size = 16  # batch size for the projectors
+
 
     verbose = accelerator.is_main_process
 
     device = next(model.parameters()).device
-    dtype = next(model.parameters()).dtype
 
-    # projector = get_trak_projector(device, verbose)
-    # number_of_params = get_number_of_params(model, verbose)
-    #
-    # proj = projector(grad_dim=number_of_params,
-    #                  proj_dim=proj_dim,
-    #                  seed=0,
-    #                  proj_type=ProjectionType.rademacher,
-    #                  device=device,
-    #                  dtype=dtype,
-    #                  block_size=block_size,
-    #                  max_batch_size=projector_batch_size)
 
     model.zero_grad()
     total_steps = len(dataloader)
@@ -180,7 +126,6 @@ def collect_valid_grads(dataloader,
     accelerator.wait_for_everyone()
     vectorized_grads = obtain_gradients(model)
     vectorized_grads = vectorized_grads.unsqueeze(0)
-    # projected_grads = proj.project(vectorized_grads, model_id=model_id)
     projected_grads = vectorized_grads
 
     accelerator.wait_for_everyone()
@@ -191,14 +136,7 @@ def collect_valid_grads(dataloader,
 
 
 def calculate_influence_score(training_info: torch.Tensor, validation_info: torch.Tensor):
-    """Calculate the influence score.
 
-    Args:
-        training_info (torch.Tensor): training info (gradients/representations) stored in a tensor of shape N x N_DIM
-        validation_info (torch.Tensor): validation info (gradients/representations) stored in a tensor of shape N_VALID x N_DIM
-    """
-    # training_info = normalize(training_info, dim=1)
-    # validation_info = normalize(validation_info, dim=1)
     # N x N_VALID
     influence_scores = torch.matmul(
         training_info, validation_info.transpose(0, 1))

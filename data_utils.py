@@ -23,17 +23,6 @@ def get_less_datasets(config):
 
 
 
-def get_abl_tokenizers(config):
-    tokenizers = []
-    # "rqvae_seed_{}/sentence-t5-base_256,256,256,256"
-    token_prefix = config["token_prefix"]
-    for sem_id_epoch in config["sem_id_epochs"]:
-        config["token_prefix"] = token_prefix.format(sem_id_epoch)
-        tokenizers.append(Tokenizer(config))
-
-    return tokenizers
-
-
 def get_tokenizers(config):
     tokenizers = []
 

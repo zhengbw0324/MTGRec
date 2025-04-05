@@ -16,13 +16,13 @@ train_batch_size: 256
 eval_batch_size: 128
 lr: 0.001
 weight_decay: 0.05
-warmup_steps: 10000
+warmup_steps: 0
 steps: ~
-epochs: 300
+epochs: 100
 max_grad_norm: 1.0      # None for no clipping, else a float value
 eval_interval: 1        # Evaluate every n epochs
 save_interval: ~
-patience: 7            # Early stopping. Stop training after n epochs without improvement. Set to None to disable
+patience: 10            # Early stopping. Stop training after n epochs without improvement. Set to None to disable
 
 topk: [5,10]
 metrics: [ndcg,recall]

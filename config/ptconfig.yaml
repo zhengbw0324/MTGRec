@@ -14,28 +14,28 @@ pretrained_model: ""
 
 
 # data selection
-epoch_per_stage: [60, 20, 20]
-tau: 0.05
-load_best_for_next_stage: True
+epoch_per_stage: [60, 20, 20, 20, 20, 20, 20]
+tau: 1.0
+load_best_for_next_stage: False
 
 
 train_batch_size: 256
 eval_batch_size: 256
-lr: 0.001
+lr: 0.005
 weight_decay: 0.05
 warmup_steps: 10000
 steps: ~
-epochs: 300
+epochs: 200
 max_grad_norm: 1.0      # None for no clipping, else a float value
 eval_interval: 1        # Evaluate every n epochs
-save_interval: ~
+save_interval: 10
 patience: 50            # Early stopping. Stop training after n epochs without improvement. Set to None to disable
 
 topk: [5,10]
 metrics: [ndcg,recall]
 val_metric: ndcg@10
-val_ratio: 0.1
-val_delay: 0
+val_ratio: 1.0
+val_delay: 100
 
 # Config for Tokenizer
 n_codebooks: 3
