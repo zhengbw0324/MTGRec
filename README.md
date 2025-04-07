@@ -28,7 +28,7 @@ dataset_name/
 ├── all_item_seqs.json
 ├── id_mapping.json
 └── rqvae/
-	├── sentence-t5-base_256,256,256,256_9950.sem_ids
+    ├── sentence-t5-base_256,256,256,256_9950.sem_ids
     ├── ...
     └── sentence-t5-base_256,256,256,256_10000.sem_ids
 ```
