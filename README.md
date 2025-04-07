@@ -29,8 +29,8 @@ dataset_name/
 ├── id_mapping.json
 └── rqvae/
 	├── sentence-t5-base_256,256,256,256_9950.sem_ids
-  ├── ...
-  └── sentence-t5-base_256,256,256,256_10000.sem_ids
+    ├── ...
+    └── sentence-t5-base_256,256,256,256_10000.sem_ids
 ```
 
 ## Quick Start
