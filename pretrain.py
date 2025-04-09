@@ -9,7 +9,7 @@ import yaml
 from accelerate import Accelerator
 
 from collator import Collator
-from model import STIGER
+from model import MTGRec
 from trainer import Trainer
 from utils import *
 from data_utils import *
@@ -59,7 +59,7 @@ def main(config):
     test_collate_fn = Collator(config, tokenizers)
 
     with accelerator.main_process_first():
-        model = STIGER(config, train_dataset, tokenizers[-1])
+        model = MTGRec(config, train_dataset, tokenizers[-1])
 
     log(model, accelerator, logger)
     log(model.n_parameters, accelerator, logger)
@@ -162,7 +162,7 @@ def main(config):
     trainer.model, test_data = accelerator.prepare(
         model, test_data
     )
-    test_results, all_results = trainer.evaluate_all_tokenizer(test_data)
+    test_results, all_results = trainer.evaluate_all_tokenizer(test_data, store=True)
 
     if accelerator.is_main_process:
         for key in test_results:

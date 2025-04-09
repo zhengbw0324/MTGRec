@@ -27,7 +27,7 @@ class AbstractModel(nn.Module):
     def generate(self, batch, n_return_sequences=1):
         raise NotImplementedError('predict method must be implemented.')
 
-class STIGER(AbstractModel):
+class MTGRec(AbstractModel):
     """
     TIGER model from Rajput et al. "Recommender Systems with Generative Retrieval." NeurIPS 2023.
 
@@ -45,7 +45,7 @@ class STIGER(AbstractModel):
         dataset,
         tokenizer,
     ):
-        super(STIGER, self).__init__(config, dataset, tokenizer)
+        super(MTGRec, self).__init__(config, dataset, tokenizer)
 
         t5config = T5Config(
             num_layers=config['num_layers'], 
@@ -97,7 +97,7 @@ class STIGER(AbstractModel):
         outputs = self.t5(**batch)
         return outputs
 
-    def generate(self, batch: dict, n_return_sequences: int = 1) -> torch.Tensor:
+    def generate(self, batch: dict, n_return_sequences: int = 1):
         """
         Generates sequences using beam search algorithm.
 
@@ -112,13 +112,15 @@ class STIGER(AbstractModel):
         outputs = self.beam_search(
             input_ids=batch['input_ids'],
             attention_mask=batch['attention_mask'],
-            max_length=n_digit+1,
+            max_length=n_digit + 1,
             num_beams=self.config['num_beams'],
             num_return_sequences=n_return_sequences,
-            return_score=False
+            return_score=True
         )
-        outputs = outputs[:, 1:1+n_digit].reshape(-1, n_return_sequences, n_digit)
-        return outputs
+        preds, scores = outputs
+        preds = preds[:, 1:1 + n_digit].reshape(-1, n_return_sequences, n_digit)
+        scores = scores.reshape(-1, n_return_sequences)
+        return preds, scores
 
     def beam_search(
         self,

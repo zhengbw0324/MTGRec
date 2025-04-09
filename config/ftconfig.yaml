@@ -54,7 +54,7 @@ dropout_rate: 0.1
 activation_function: "relu"
 feed_forward_proj: "relu"
 
-
+results_dir: ~
 
 sem_id_epochs: []
 

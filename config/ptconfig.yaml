@@ -60,6 +60,6 @@ d_kv: 64
 dropout_rate: 0.1
 activation_function: "relu"
 feed_forward_proj: "relu"
-
+results_dir: ~
 
 sem_id_epochs: [9990, 9991, 9992, 9993, 9994, 9995, 9996, 9997, 9998, 9999, 10000]

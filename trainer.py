@@ -58,6 +58,9 @@ class Trainer:
             self.config['ckpt_dir'],
             f'{self.config["ckpt_name"]}.pth'
         )
+
+        self.results_dir = self.config['results_dir'] if self.config['results_dir'] else self.config['ckpt_dir']
+        ensure_dir(self.results_dir)
         
         self.best_epoch = 0
         self.best_val_score = -1
@@ -211,17 +214,25 @@ class Trainer:
             desc=f"Eval - {split}",
             disable=not self.accelerator.is_main_process,
         )
+        all_results_info = {"preds": [], "scores": [], "labels": []}
         for batch in val_progress_bar:
             with torch.no_grad():
                 batch = {k: v.to(self.accelerator.device) for k, v in batch.items()}
-                if self.config['use_ddp']: # ddp, gather data from all devices for evaluation
-                    preds = self.model.module.generate(batch, n_return_sequences=self.evaluator.maxk)
-                    all_preds, all_labels = self.accelerator.gather_for_metrics((preds, batch['labels']))
+                if self.config['use_ddp']:  # ddp, gather data from all devices for evaluation
+                    preds, scores = self.model.module.generate(batch, n_return_sequences=self.evaluator.maxk)
+                    all_preds, all_scores, all_labels = self.accelerator.gather_for_metrics(
+                        (preds, scores, batch['labels']))
                     results = self.evaluator.calculate_metrics(all_preds, all_labels)
+                    all_results_info["preds"].append(all_preds.detach().cpu())
+                    all_results_info["scores"].append(all_scores.detach().cpu())
+                    all_results_info["labels"].append(all_labels.detach().cpu())
                 else:
-                    preds = self.model.generate(batch, n_return_sequences=self.evaluator.maxk)
+                    preds, scores = self.model.generate(batch, n_return_sequences=self.evaluator.maxk)
                     results = self.evaluator.calculate_metrics(preds, batch['labels'])
-                    
+                    all_results_info["preds"].append(preds.detach().cpu())
+                    all_results_info["scores"].append(scores.detach().cpu())
+                    all_results_info["labels"].append(batch['labels'].detach().cpu())
+
                 for key, value in results.items():
                     all_results[key].append(value)
 
@@ -231,17 +242,68 @@ class Trainer:
                 key = f"{metric}@{k}"
                 output_results[key] = torch.cat(all_results[key]).mean().item()
 
-        return output_results
+        for key in all_results_info:
+            all_results_info[key] = torch.cat(all_results_info[key], dim=0).tolist()
 
-    def evaluate_all_tokenizer(self, dataloader, split='test'):
+        return output_results, all_results_info
+
+
+    def store_results(self, results_info, collate_fn, split='test'):
+        """
+        Store the results in a file.
+
+        Args:
+            results_info (dict): The results info to store.
+            collate_fn (Collator): The collate function used for data loading.
+        """
+        preds = results_info['preds']
+        pred_ids = []
+        for i in range(len(preds)):
+            item_list = []
+            for j in range(len(preds[i])):
+                item = collate_fn.tokens2item(preds[i][j])
+                item_list.append(item)
+            pred_ids.append(item_list)
+        results_info['pred_ids'] = pred_ids
+
+        labels = results_info['labels']
+        label_ids = []
+        eos_token = collate_fn.tokenizers[0].eos_token
+        for i in range(len(labels)):
+            cur_label = labels[i]
+            if eos_token in cur_label:
+                eos_pos = cur_label.index(eos_token)
+                cur_label = cur_label[:eos_pos]
+
+            target_item = collate_fn.tokens2item(cur_label)
+            label_ids.append(target_item)
+        results_info['label_ids'] = label_ids
+
+        if self.accelerator.is_main_process:
+            if len(self.config['sem_id_epochs']) == 1:
+                tokenizer_id = self.config['sem_id_epochs'][0]
+            else:
+                tokenizer_id = collate_fn.tokenizer_id
+
+            results_info_path = os.path.join(self.results_dir, f"{split}_results_{tokenizer_id}.json")
+
+            with open(results_info_path, 'w') as f:
+                json.dump(results_info, f)
+            self.log(f'Stored results to {results_info_path}')
+
+
+    def evaluate_all_tokenizer(self, dataloader, split='test', store=False):
 
         tokenizer_num = dataloader.collate_fn.tokenizer_num
 
         results_list = []
+
         for tokenizer_id in range(tokenizer_num):
             dataloader.collate_fn.set_tokenizer(tokenizer_id)
-            results = self.evaluate(dataloader, split)
+            results, results_info = self.evaluate(dataloader, split)
             results_list.append(results)
+            if store:
+                self.store_results(results_info, dataloader.collate_fn, split)
 
         mean_results = OrderedDict()
 

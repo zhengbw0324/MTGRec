@@ -3,7 +3,7 @@ import copy
 from torch.utils.data import ConcatDataset, DataLoader
 
 from dataset import SeqRecDataset
-from tokenizer import STIGERTokenizer, Tokenizer
+from tokenizer import MTGRecTokenizer, Tokenizer
 
 
 def get_datasets(config):
@@ -27,7 +27,7 @@ def get_tokenizers(config):
     tokenizers = []
 
     for sem_id_epoch in config["sem_id_epochs"]:
-        tokenizer = STIGERTokenizer(config, sem_id_epoch)
+        tokenizer = MTGRecTokenizer(config, sem_id_epoch)
         tokenizers.append(tokenizer)
     if len(tokenizers) ==0:
         tokenizers.append(Tokenizer(config))

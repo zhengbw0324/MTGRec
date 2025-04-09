@@ -171,11 +171,11 @@ class Tokenizer:
 
 
 
-class STIGERTokenizer(Tokenizer):
+class MTGRecTokenizer(Tokenizer):
 
 	def __init__(self, config, sem_id_epoch = None):
 		self.sem_id_epoch = sem_id_epoch
-		super(STIGERTokenizer, self).__init__(config)
+		super(MTGRecTokenizer, self).__init__(config)
 
 
 	def _load_item2tokens(self):

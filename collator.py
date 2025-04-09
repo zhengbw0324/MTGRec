@@ -49,6 +49,14 @@ class Collator:
     def set_select_prob(self, select_prob):
         self.select_prob = select_prob
 
+    def tokens2item(self, tokens):
+        if self.tokenizer_id is None:
+            tokenizer = np.random.choice(self.tokenizers, p=self.select_prob)
+        else:
+            tokenizer = self.tokenizers[self.tokenizer_id]
+
+        return tokenizer._tokens2item(tokens)
+
     def log(self, message, level='info'):
 
         return log(message, self.config['accelerator'], self.logger, level=level)

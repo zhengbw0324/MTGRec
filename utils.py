@@ -9,7 +9,9 @@ from accelerate.utils import set_seed
 from sentence_transformers import SentenceTransformer
 
 
+def ensure_dir(dir_path):
 
+    os.makedirs(dir_path, exist_ok=True)
 
 def config_for_log(config: dict) -> dict:
     config = config.copy()
