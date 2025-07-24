@@ -22,13 +22,13 @@ class Tokenizer:
 		id_mapping = load_json(id_mapping_file)
 		self.user2id = id_mapping['user2id']
 
-		self.item2tokens = self._load_item2tokens()
+		self.item2tokens, self.tokens2item = self._load_item2tokens()
 
 		self.base_user_token = sum(self.n_codebook) + 1
 		self.n_user_tokens = self.config['n_user_tokens']
 		self.eos_token = self.base_user_token + self.n_user_tokens
 
-	def _sem_ids_to_tokens(self, item2sem_ids: dict) -> dict:
+	def _sem_ids_to_tokens(self, item2sem_ids: dict):
 		"""
 		Converts semantic IDs to tokens.
 
@@ -40,6 +40,7 @@ class Tokenizer:
 		"""
 
 		offset = np.cumsum([0] + self.n_codebook)[:-1]
+		sem_ids2item = {}
 		for item in item2sem_ids:
 			tokens = list(item2sem_ids[item])
 			for digit in range(self.n_digit):
@@ -47,7 +48,8 @@ class Tokenizer:
 				tokens[digit] += offset[digit] + 1
 				tokens[digit] = int(tokens[digit])
 			item2sem_ids[item] = tuple(tokens)
-		return item2sem_ids
+			sem_ids2item[tuple(tokens)] = item
+		return item2sem_ids, sem_ids2item
 
 	def _load_item2tokens(self):
 		# Load semantic IDs
@@ -58,9 +60,9 @@ class Tokenizer:
 		)
 		self.log(f'[TOKENIZER] Loading semantic IDs from {sem_ids_path}...')
 		item2sem_ids = json.load(open(sem_ids_path, 'r'))
-		item2tokens = self._sem_ids_to_tokens(item2sem_ids)
+		item2tokens, tokens2item = self._sem_ids_to_tokens(item2sem_ids)
 
-		return item2tokens
+		return item2tokens, tokens2item
 
 	@property
 	def n_digit(self):
@@ -121,6 +123,22 @@ class Tokenizer:
 		"""
 		return self.item2tokens[item]
 
+	def _tokens2item(self, tokens: list) -> str:
+		"""
+		Converts a list of tokens to the corresponding item.
+
+		Args:
+			tokens (list): The tokens to be converted.
+
+		Returns:
+			str: The item corresponding to the tokens.
+		"""
+		if tuple(tokens) not in self.tokens2item:
+			# self.log(f'[TOKENIZER] Warning: {tokens} not in tokens2item')
+			return "None"
+
+		return self.tokens2item[tuple(tokens)]
+
 	def tokenize(self, example: dict) -> dict:
 
 		max_item_seq_len = self.config['max_item_seq_len']
@@ -171,11 +189,11 @@ class Tokenizer:
 
 
 
-class MTGRecTokenizer(Tokenizer):
+class STIGERTokenizer(Tokenizer):
 
 	def __init__(self, config, sem_id_epoch = None):
 		self.sem_id_epoch = sem_id_epoch
-		super(MTGRecTokenizer, self).__init__(config)
+		super(STIGERTokenizer, self).__init__(config)
 
 
 	def _load_item2tokens(self):
